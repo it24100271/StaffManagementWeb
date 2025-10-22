@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Department & Staff Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+    <style>
+        :root { --sidebar-bg:#0f172a; --sidebar-active:#1e293b; --brand-blue:#0b2a5b; }
+        body { background: rgba(202, 208, 241, 0.45); min-height:100vh; }
+        .app { display:grid; grid-template-columns:260px 1fr; grid-template-rows:72px 1fr auto; min-height:100vh; }
+        .topbar { grid-column:2/-1; grid-row:1; background:linear-gradient(90deg,#0ea5e9,#6366f1); color:#fff; }
+        .sidebar { grid-column:1; grid-row:1/span 3; background:var(--sidebar-bg); color:#c7d2fe; padding:20px 16px; display:flex; flex-direction:column; gap:12px; }
+        .content { grid-column:2; grid-row:2; padding:24px; }
+        .footer { grid-column:2; grid-row:3; padding:16px 24px 28px; }
+        .sidebar .title { line-height:1.1; font-weight:700; margin:6px 8px; }
+        .nav-btn { width:100%; text-align:left; color:#e2e8f0; background:var(--sidebar-active); border:none; border-radius:14px; padding:12px 14px; font-weight:600; transition:all .15s; display:flex; align-items:center; gap:.6rem; }
+        .nav-btn:hover { filter:brightness(1.2); }
+        .nav-btn.inactive { background:#0b294f; color:#8ca2c0; }
+        .spacer { flex:1; }
+        .logout { background:var(--sidebar-active); color:#e2e8f0; border:none; border-radius:14px; padding:12px; font-weight:600; }
+        .card { border:1px solid #e5e7eb!important; border-radius:16px!important; }
+        .card-theme { background:var(--bs-primary-bg-subtle); border-color:var(--bs-primary-border-subtle)!important; }
+        .table thead th { color:#334155; font-weight:700; border-top:none; background:var(--bs-light-bg-subtle); }
+        .table tbody tr:hover { background:rgba(99,102,241,.05); }
+        .btn-ghost { border:none; padding:.35rem .75rem; border-radius:.5rem; font-weight:600; color:#fff; }
+        .btn-update { background: rgba(10, 20, 124, 0.77); }
+        .btn-delete { background: #ef4452; }
+        .readonly-badge { font-size:.75rem; font-weight:700; color:#0f172a; background:#e2e8f0; border-radius:8px; padding:.2rem .5rem; }
+        .modal-content {
+            border: 6px solid #3b82f6;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <aside class="sidebar">
+        <div class="title h5">Department &<br/>Staff Management</div>
+        <button id="btnDepartments" class="nav-btn"><i class="bi bi-columns-gap"></i> Departments</button>
+        <button id="btnStaff" class="nav-btn inactive"><i class="bi bi-people-fill"></i> Staff</button>
+        <div class="spacer"></div>
+        <button class="logout" onclick="window.location.href='/logout'"><i class="bi bi-box-arrow-right me-1"></i> Logout</button>
+    </aside>
+
+    <header class="topbar d-flex align-items-center justify-content-between px-4">
+        <div class="w-100 me-3">
+            <input id="searchInput" class="form-control form-control-lg" type="search" placeholder="Search departments or staff..."/>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <div class="text-end d-none d-sm-block me-2">
+                <div class="fw-semibold">Kanishka Fernando</div>
+                <small class="text-light opacity-75">it24100271@my.sliit.lk</small>
+            </div>
+
+        </div>
+    </header>
+
+    <main class="content">
+
+
+
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h4 class="mb-0" id="sectionTitle"><STRONG>Department Details</STRONG> </h4>
+            <button id="btnAddDept" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Add Department</button>
+        </div>
+
+        <div id="departmentsView" class="card card-theme p-3">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0" id="departmentsTable">
+                    <thead><tr><th style="width:120px;">ID</th><th style="width:240px;">Name</th><th>Description</th><th style="width:240px;">Actions</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="staffView" class="card card-theme p-3 d-none">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">Staff</h5>
+                <button id="openAssignModal" class="btn btn-info text-white fw-semibold"><i class="bi bi-person-plus-fill me-1"></i> Assign</button>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0" id="staffTable">
+                    <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Department</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div class="footer">
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px;display:flex;gap:10px;max-width:760px;">
+            <input id="designateInput" type="text" class="form-control border-0" placeholder="Enter designation..."/>
+            <button id="designateBtn" class="btn btn-primary fw-semibold"><i class="bi bi-check2-circle me-1"></i> Designate</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addDeptModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Add Department</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <form id="addDeptForm" class="row g-3">
+                <div class="col-12"><label class="form-label">Name</label><input name="name" type="text" class="form-control" required/></div>
+                <div class="col-12"><label class="form-label">Description</label><textarea name="description" class="form-control" rows="3" required></textarea><div class="form-text">Maximum 20 words allowed</div></div>
+            </form>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button id="addDeptSubmit" class="btn btn-primary">Create</button></div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="updateDeptModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Update Department</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <form id="updateDeptForm" class="row g-3">
+                <div class="col-12"><label class="form-label">ID</label><input name="id" type="text" class="form-control" readonly/></div>
+                <div class="col-12"><label class="form-label">Name</label><input name="name" type="text" class="form-control" required/></div>
+                <div class="col-12"><label class="form-label">Description</label><textarea name="description" class="form-control" rows="3" required></textarea></div>
+            </form>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button id="updateDeptSubmit" class="btn btn-primary">Save</button></div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Confirm Delete</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">Are you sure you want to delete <strong id="delDeptName"></strong>?</div>
+        <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button id="confirmDeleteBtn" class="btn btn-danger">Delete</button></div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="assignModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Assign New Staff</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <form id="assignForm" class="row g-3">
+                <div class="col-12"><label class="form-label">Name</label><input name="name" type="text" class="form-control" required/></div>
+                <div class="col-12"><label class="form-label">Email</label><input name="email" type="email" class="form-control" required/></div>
+                <div class="col-12"><label class="form-label">Phone</label><input name="phone" type="tel" class="form-control"/></div>
+                <div class="col-12"><label class="form-label">Role</label><input name="role" type="text" class="form-control"/></div>
+                <div class="col-12"><label class="form-label">Department</label><select name="department" class="form-control"><option value="">No Department</option></select></div>
+            </form>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button id="assignSubmit" class="btn btn-success">Submit</button></div>
+    </div></div>
+</div>
+
+<div class="position-fixed top-0 end-0 p-3" style="z-index:1080">
+    <div id="appToast" class="toast align-items-center text-bg-dark border-0">
+        <div class="d-flex"><div id="toastBody" class="toast-body"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const toast = bootstrap.Toast.getOrCreateInstance(document.getElementById('appToast'));
+    function showToast(m, c = 'dark') {
+        const t = document.getElementById('appToast');
+        t.className = 'toast align-items-center text-bg-' + c + ' border-0';
+        document.getElementById('toastBody').textContent = m;
+        toast.show();
+    }
+
+    const btnDepartments = document.getElementById('btnDepartments');
+    const btnStaff = document.getElementById('btnStaff');
+    const departmentsView = document.getElementById('departmentsView');
+    const staffView = document.getElementById('staffView');
+    const deptTBody = document.querySelector('#departmentsTable tbody');
+    const staffTBody = document.querySelector('#staffTable tbody');
+
+    let departments = [];
+    let staff = [];
+
+    async function loadDepartments() {
+        try {
+            const r = await fetch('/api/departments');
+            if (r.ok) {
+                departments = await r.json();
+                console.log('Loaded departments:', departments);
+                renderDepartments();
+            } else {
+                console.error('Failed to load departments:', r.status);
+                showToast('Failed to load departments', 'danger');
+            }
+        } catch (e) {
+            console.error('Error:', e);
+            showToast('Cannot connect to server', 'danger');
+        }
+    }
+
+    async function loadStaff() {
+        try {
+            const r = await fetch('/api/staff');
+            if (r.ok) {
+                staff = await r.json();
+                renderStaff();
+            } else {
+                showToast('Failed to load staff', 'danger');
+            }
+        } catch (e) {
+            console.error('Error:', e);
+            showToast('Error loading staff', 'danger');
+        }
+    }
+
+    function showDepartments() {
+        departmentsView.classList.remove('d-none');
+        staffView.classList.add('d-none');
+        btnDepartments.classList.remove('inactive');
+        btnStaff.classList.add('inactive');
+    }
+
+    function showStaffView() {
+        departmentsView.classList.add('d-none');
+        staffView.classList.remove('d-none');
+        btnDepartments.classList.add('inactive');
+        btnStaff.classList.remove('inactive');
+        if (staff.length === 0) loadStaff();
+    }
+
+    btnDepartments.addEventListener('click', showDepartments);
+    btnStaff.addEventListener('click', showStaffView);
+
+    function renderDepartments() {
+        deptTBody.innerHTML = '';
+        if (departments.length === 0) {
+            deptTBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">No departments found. Click "Add Department" to create one.</td></tr>';
+            return;
+        }
+        departments.forEach(d => {
+            const tr = document.createElement('tr');
+            const deptId = d.departmentId || d.id || 'N/A';
+            const deptName = d.departmentName || d.name || 'Unnamed';
+            const deptDesc = d.departmentDescription || d.description || 'No description';
+
+            tr.dataset.id = deptId;
+            tr.dataset.name = deptName;
+            tr.dataset.description = deptDesc;
+
+            tr.innerHTML = `
+            <td><span class="badge text-bg-secondary">${deptId}</span></td>
+            <td class="fw-semibold">${deptName}</td>
+            <td>${deptDesc}</td>
+            <td>
+                <button class="btn-ghost btn-update me-2" data-action="update">
+                    <i class="bi bi-pencil-square"></i> Update
+                </button>
+                <button class="btn-ghost btn-delete" data-action="delete">
+                    <i class="bi bi-trash3"></i> Delete
+                </button>
+            </td>
+        `;
+            deptTBody.appendChild(tr);
+        });
+    }
+
+    function renderStaff() {
+        staffTBody.innerHTML = '';
+        staff.forEach(s => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+            <td>${s.id}</td>
+            <td>${s.name}</td>
+            <td>${s.email}</td>
+            <td>${s.phone || 'N/A'}</td>
+            <td>${s.role || 'N/A'}</td>
+            <td><span class="readonly-badge">${s.department ? 'Dept: ' + (s.department.departmentName || s.department.name) : 'Unassigned'}</span></td>
+        `;
+            staffTBody.appendChild(tr);
+        });
+    }
+
+    document.getElementById('searchInput').addEventListener('input', e => {
+        const t = e.target.value.toLowerCase();
+        const b = !departmentsView.classList.contains('d-none') ? deptTBody : staffTBody;
+        [...b.rows].forEach(r => r.style.display = r.innerText.toLowerCase().includes(t) ? '' : 'none');
+    });
+
+    const addDeptModal = new bootstrap.Modal(document.getElementById('addDeptModal'));
+    document.getElementById('btnAddDept').addEventListener('click', () => {
+        document.getElementById('addDeptForm').reset();
+        addDeptModal.show();
+    });
+
+    document.getElementById('addDeptSubmit').addEventListener('click', async () => {
+        const f = document.getElementById('addDeptForm');
+        if (!f.reportValidity()) return;
+
+        const n = f.elements.name.value.trim();
+        const d = f.elements.description.value.trim();
+
+        if (d && d.split(/\s+/).filter(w => w.length > 0).length > 20) {
+            return showToast('Description must be 20 words or less', 'warning');
+        }
+
+        try {
+            const r = await fetch('/api/departments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    departmentName: n,
+                    departmentDescription: d
+                })
+            });
+
+            if (r.ok) {
+                await loadDepartments();
+                addDeptModal.hide();
+                showToast('Department created successfully!', 'success');
+            } else {
+                const e = await r.json();
+                showToast(e.error || 'Failed to create department', 'warning');
+            }
+        } catch (e) {
+            console.error(e);
+            showToast('Error creating department', 'danger');
+        }
+    });
+
+    let pendingDeleteId = null;
+    deptTBody.addEventListener('click', e => {
+        const b = e.target.closest('button');
+        if (!b) return;
+
+        const r = b.closest('tr');
+        const id = r.dataset.id;
+        const name = r.dataset.name;
+        const description = r.dataset.description;
+
+        if (b.dataset.action === 'update') {
+            const f = document.getElementById('updateDeptForm');
+            f.elements.id.value = id;
+            f.elements.name.value = name;
+            f.elements.description.value = description;
+            bootstrap.Modal.getOrCreateInstance('#updateDeptModal').show();
+        } else if (b.dataset.action === 'delete') {
+            pendingDeleteId = id;
+            document.getElementById('delDeptName').textContent = name;
+            bootstrap.Modal.getOrCreateInstance('#deleteConfirmModal').show();
+        }
+    });
+
+    document.getElementById('updateDeptSubmit').addEventListener('click', async () => {
+        const f = document.getElementById('updateDeptForm');
+        if (!f.reportValidity()) return;
+
+        const id = f.elements.id.value;
+        const n = f.elements.name.value.trim();
+        const d = f.elements.description.value.trim();
+
+        if (d && d.split(/\s+/).filter(w => w.length > 0).length > 20) {
+            return showToast('Description must be 20 words or less', 'warning');
+        }
+
+        try {
+            const r = await fetch(`/api/departments/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    departmentName: n,
+                    departmentDescription: d
+                })
+            });
+
+            if (r.ok) {
+                await loadDepartments();
+                bootstrap.Modal.getInstance(document.getElementById('updateDeptModal')).hide();
+                showToast('Department updated successfully!', 'info');
+            } else {
+                const e = await r.json();
+                showToast(e.error || 'Failed to update', 'warning');
+            }
+        } catch (e) {
+            console.error(e);
+            showToast('Error updating department', 'danger');
+        }
+    });
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+        if (!pendingDeleteId) return;
+
+        try {
+            const r = await fetch(`/api/departments/${pendingDeleteId}`, { method: 'DELETE' });
+
+            if (r.ok) {
+                await loadDepartments();
+                bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
+                showToast('Department deleted successfully!', 'success');
+            } else {
+                const e = await r.json();
+                showToast(e.error || 'Failed to delete', 'warning');
+            }
+        } catch (e) {
+            console.error(e);
+            showToast('Error deleting department', 'danger');
+        }
+
+        pendingDeleteId = null;
+    });
+
+    const assignModal = new bootstrap.Modal(document.getElementById('assignModal'));
+    document.getElementById('openAssignModal').addEventListener('click', () => {
+        const s = document.querySelector('select[name="department"]');
+        s.innerHTML = '<option value="">No Department</option>';
+        departments.forEach(d => {
+            const o = document.createElement('option');
+            o.value = d.departmentId || d.id;
+            o.textContent = d.departmentName || d.name;
+            s.appendChild(o);
+        });
+        assignModal.show();
+    });
+
+    document.getElementById('assignSubmit').addEventListener('click', async () => {
+        const f = document.getElementById('assignForm');
+        if (!f.reportValidity()) return;
+
+        const data = Object.fromEntries(new FormData(f).entries());
+
+        try {
+            const r = await fetch('/api/staff', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: data.name,
+                    email: data.email,
+                    phone: data.phone,
+                    role: data.role
+                })
+            });
+
+            if (r.ok) {
+                const s = await r.json();
+                if (data.department && data.department !== '') {
+                    await fetch(`/api/staff/${s.id}/assign/${data.department}`, { method: 'POST' });
+                }
+                await loadStaff();
+                f.reset();
+                assignModal.hide();
+                showStaffView();
+                showToast('Staff assigned successfully!', 'success');
+            } else {
+                const e = await r.json();
+                showToast(e.error || 'Failed to create staff', 'warning');
+            }
+        } catch (e) {
+            console.error(e);
+            showToast('Error creating staff', 'danger');
+        }
+    });
+
+    document.getElementById('designateBtn').addEventListener('click', () => {
+        const v = document.getElementById('designateInput').value.trim();
+        if (!v) return;
+        showToast('Designation saved: ' + v, 'primary');
+        document.getElementById('designateInput').value = '';
+    });
+
+    loadDepartments();
+    showDepartments();
+</script>
+</body>
+</html>
